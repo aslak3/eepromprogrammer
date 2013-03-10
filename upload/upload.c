@@ -79,7 +79,12 @@ int main(int argc, char *argv[])
 		int mode = 1;
 		
 		memset(transmissionbuffer, 0, 64);
-		if (bytessent == 8128 || bytessent == 16320) mode = 0;
+		if (bytessent == 8128 ||
+			bytessent == 16320 ||
+			bytessent == 960)
+		{
+			mode = 0;
+		}
 		fprintf(serialfp, "upblock 1 %d\r", mode);
 		if ((bytesread = read(filefd, transmissionbuffer, 64)) < 0)
 		{

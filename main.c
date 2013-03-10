@@ -1,3 +1,9 @@
+/* Parallel EEPROM programmer.
+ *
+ * For the ATMEGA8 and perhaps others.
+ *
+ * (c) 2013 Lawrence Manning. */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,44 +22,48 @@
 
 #define WRITE_DELAY 10
 
+/* Serial related */
 void writechar(char c);
 char readchar(void);
 void writestring(char *string);
 void readstring(char *string);
 void saydone(void);
 void debugprint(char *string);
-
 void hello(void);
 
+/* Counter related */
 void clockcounter(unsigned int count);
 void resetcounter(void);
 
+/* Memory related */
 unsigned char readmembyte(void);
 int writemembyte(unsigned char w, int pagemode);
 int writemempage(unsigned char *b, int pagemode);
 
+/* GLOBALS */
 int debugmode = 0;
 int writedelay = WRITE_DELAY;
 int echo = 0;
-int counter;
+int counter = 0;
 
 int main(void)
 {
-
+	/* Configure the serial port UART */
 	UBRRL = BAUD_PRESCALE;
 	UBRRH = (BAUD_PRESCALE >> 8);
-	UCSRB = (1 << RXEN) | (1 << TXEN);   // Turn on the transmission and reception circuitry 
+	UCSRB = (1 << RXEN) | (1 << TXEN);   /* Turn on the transmission and reception circuitry. */
 
-	DDRB = 0x00;	/* Assume read mode except in writes. */
-	DDRD = 0xfc; 	/* bits 0 and 1 for serial, 2 for clock, 3 for reset. */
+	DDRB = 0x00;	/* Assume input mode except in writes. */
+	DDRD = 0xfc; 	/* bits 0 and 1 for serial, 2 for clock, 3 for reset,
+			 * 4 for WE, 5 for CE and 6 for OE. 7 is unused. */
 
 	resetcounter();
 
-	PORTD &= ~MEM_CE;	// CE high
-	PORTD |= MEM_OE;	// OE high
-	PORTD |= MEM_WE;	// WE high
+	PORTD &= ~MEM_CE;	/* CE low (for good) */
+	PORTD |= MEM_OE;	/* OE high */
+	PORTD |= MEM_WE;	/* WE high */
 	
-	_delay_ms(10);		// Lets the UART fully wake up
+	_delay_ms(10);		/* Lets the UART fully wake up */
 	hello();
 
 	while (1)
@@ -68,6 +78,7 @@ int main(void)
 		char *args[10];
 		int argc = 0;
 
+		/* Cut the input ito arguments. */
 		args[argc++] = strtok(serialinput, " ");
 		while ((args[argc++] = strtok(NULL, " ")));
 		args[argc] = NULL;
@@ -79,6 +90,7 @@ int main(void)
 			debugprint(serialoutput);
 		}
 		
+		/* Assume the first argument is "count" and set it to one. */
 		int count = 1;
 		if (argc > 1)
 			count = strtol(args[1], NULL, 0);
@@ -106,6 +118,7 @@ int main(void)
 					sprintf(serialoutput, "%04x ", c);
 					writestring(serialoutput);
 				}
+				/* First and last printable chars. */
 				if (m < ' ' || m > '~')
 					m = '.';
 				sprintf(serialoutput, "%02x (%c) ", n, m);
@@ -136,7 +149,7 @@ int main(void)
 		}
 		else if (strcmp(args[0], "writemembytes") == 0)
 		{
-			unsigned char w = 0; // The byte to write
+			unsigned char w = 0; /* The byte to write. */
 			if (argc > 2)
 				w = strtol(args[2], NULL, 0);
 			for (c = 0; c < count; c++)
@@ -151,7 +164,7 @@ int main(void)
 			for (c = 0; c < 64; c++)
 				r[c] = c;
 				
-			int pagemode = 1; // Default to page writing
+			int pagemode = 1; /* Default to page writing. */
 			if (argc > 2)
 				pagemode = atol(args[2]);
 			
@@ -166,7 +179,7 @@ int main(void)
 		}
 		else if (strcmp(args[0], "upblock") == 0)
 		{
-			int pagemode = 1; // Default to page writing
+			int pagemode = 1; /* Default to page writing. */
 			if (argc > 2)
 				pagemode = atol(args[2]);
 			
@@ -197,7 +210,7 @@ int main(void)
 		if (!badcommand) saydone();
 	}
 	
-	return 0; // Never reached
+	return 0; /* Never reached. */
 }
 
 void writechar(char c)
@@ -211,6 +224,7 @@ char readchar(void)
 {
 	char x;
 
+	/* Will block until there is a char, no interrupts here. */
 	while(!(UCSRA & (1<<RXC)));
 
 	x = UDR;
@@ -272,6 +286,7 @@ void clockcounter(unsigned int count)
 {
 	int c;
 
+	/* Up and down as quick as you can. */
 	for (c = 0; c < count; c++)
 	{
 		PORTD &= ~COUNTER_CLOCK;
@@ -283,6 +298,7 @@ void clockcounter(unsigned int count)
 
 void resetcounter(void)
 {
+	/* Up and down. */
 	PORTD &= ~(COUNTER_RESET | COUNTER_CLOCK);
 	PORTD |= (COUNTER_RESET | COUNTER_CLOCK);
 	
@@ -292,31 +308,33 @@ void resetcounter(void)
 unsigned char readmembyte(void)
 {
 	unsigned char r;
-
-	PORTD &= ~(MEM_OE);	// OE low
+	
+	PORTD &= ~(MEM_OE);	/* OE low. */
 	_delay_us(1);
 	r = PINB;
-	PORTD |= (MEM_OE);	// OE high
+	PORTD |= (MEM_OE);	/* OE high. */
 
 	return r;
 }
 
 int writemembyte(unsigned char w, int pagemode)
 {
+	/* For non page mode, we need to switch the databus to output now. */
 	if (!pagemode)
 		DDRB = 0xff;
 
-	PORTD &= ~MEM_WE;		// WE low
+	PORTD &= ~MEM_WE;		/* WE low. */
 	_delay_us(1);
-	PORTB = w;			// Set data
+	PORTB = w;			/* Set data. */
 
-	PORTD |= MEM_WE;		// WE up again
+	PORTD |= MEM_WE;		/* WE up again. */
 
 	if (!pagemode)
 		_delay_ms(writedelay);
 	else
 		_delay_us(1);
 
+	/* Back to input. */
 	if (!pagemode)
 		DDRB = 0x00;
 
@@ -327,9 +345,9 @@ int writemempage(unsigned char *b, int pagemode)
 {
 	int c;
 
-	if (counter & 0x3f) return 0; 	// Not at the start of a page
+	if (counter & 0x3f) return 0; 	/* Not at the start of a page. */
 	
-	DDRB = 0xff;
+	DDRB = 0xff; /* Databus for output. */
 	
 	for (c = 0; c < 64; c++)
 	{
@@ -340,7 +358,7 @@ int writemempage(unsigned char *b, int pagemode)
 
 	_delay_ms(writedelay);
 
-	DDRB = 0x00;
+	DDRB = 0x00; /* Back to input. */
 
 	return 1;
 }
