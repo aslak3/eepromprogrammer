@@ -160,20 +160,49 @@ int main(void)
 		}
 		else if (strcmp(args[0], "testwrites") == 0)
 		{
+			unsigned char neg = 0;
+			if (argc > 2)
+				neg = strtol(args[2], NULL, 0);
+
 			unsigned char r[64];
 			for (c = 0; c < 64; c++)
-				r[c] = c;
+				r[c] = c ^ neg;
 				
 			int pagemode = 1; /* Default to page writing. */
-			if (argc > 2)
-				pagemode = atol(args[2]);
+			if (argc > 3)
+				pagemode = atol(args[3]);
 			
 			for (c = 0; c < count; c++)
 			{
 				if (!(writemempage(r, pagemode)))
 				{
-					writestring("Error: Not on a 64byte boundary.\r\n");
+					writestring("Error.\r\n");
 					break;
+				}
+			}
+		}
+		else if (strcmp(args[0], "testreads") == 0)
+		{
+			unsigned char neg = 0;
+			if (argc > 2)
+				neg = strtol(args[2], NULL, 0);
+
+			int seenpage = -1;
+			for (c = 0; c < count; c++)
+			{
+				int d;
+				for (d = 0; d < 64; d++)
+				{
+					if (readmembyte() != (d ^ neg))
+					{
+						if (c != seenpage)
+						{
+							sprintf(serialoutput, "Error: Failed %d (page %d byte %d)\r\n", (c * 64) + d, c, d);
+							writestring(serialoutput);
+							seenpage = c;
+						}
+					}
+					clockcounter(1);
 				}
 			}
 		}
@@ -279,7 +308,7 @@ void debugprint(char *string)
 
 void hello(void)
 {
-	writestring("EEPROM burner v0.2 READY\r\n");
+	writestring("EEPROM burner v0.3 READY\r\n");
 }
 
 void clockcounter(unsigned int count)
