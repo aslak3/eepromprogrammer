@@ -14,11 +14,12 @@
 #                is connected.
 # FUSES ........ Parameters for avrdude to flash the fuses appropriately.
 
-DEVICE     = atmega8
-CLOCK      = 8000000
-PROGRAMMER = -c USBasp -P avrdoper
-OBJECTS    = main.o
-FUSES      = -U hfuse:w:0xd9:m -U lfuse:w:0x24:m
+DEVICE			= atmega8
+CLOCK			= 8000000
+PROGRAMMER 		= -c USBasp -P avrdoper
+I2C_OBJECTS		= main.o i2c.o
+PARALLEL_OBJECTS	= main.o parallel.o
+FUSES      		= -U hfuse:w:0xd9:m -U lfuse:w:0x24:m
 # ATMega8 fuse bits (fuse bits for other devices are different!):
 # Example for 8 MHz internal oscillator
 # Fuse high byte:
@@ -60,10 +61,11 @@ FUSES      = -U hfuse:w:0xd9:m -U lfuse:w:0x24:m
 # Tune the lines below only if you know what you are doing:
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
-COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
+COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE) -mcall-prologues
+LINK = avr-gcc
 
 # symbolic targets:
-all:	main.hex
+all:	i2c.hex parallel.hex
 
 .c.o:
 	$(COMPILE) -c $< -o $@
@@ -78,35 +80,28 @@ all:	main.hex
 .c.s:
 	$(COMPILE) -S $< -o $@
 
-flash:	all
-	$(AVRDUDE) -U flash:w:main.hex:i
+flash-i2c: all
+	$(AVRDUDE) -U flash:w:i2c.hex:i
+flash-parallel: all
+	$(AVRDUDE) -U flash:w:parallel.hex:i
 
 fuse:
 	$(AVRDUDE) $(FUSES)
 
-# Xcode uses the Makefile targets "", "clean" and "install"
-install: flash fuse
-
-# if you use a bootloader, change the command below appropriately:
-load: all
-	bootloadHID main.hex
-
 clean:
-	rm -f main.hex main.elf $(OBJECTS)
+	rm -f *.hex *.elf *.o
 
 # file targets:
-main.elf: $(OBJECTS)
-	$(COMPILE) -o main.elf $(OBJECTS)
+i2c.elf: $(I2C_OBJECTS)
+	$(LINK) -o i2c.elf $(I2C_OBJECTS)
+parallel.elf: $(PARALLEL_OBJECTS)
+	$(LINK) -o parallel.elf $(PARALLEL_OBJECTS)
 
-main.hex: main.elf
-	rm -f main.hex
-	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+i2c.hex: i2c.elf
+	rm -f i2c.hex
+	avr-objcopy -j .text -j .data -O ihex i2c.elf i2c.hex
+parallel.hex: parallel.elf
+	rm -f parallel.hex
+	avr-objcopy -j .text -j .data -O ihex parallel.elf parallel.hex
 # If you have an EEPROM section, you must also create a hex file for the
 # EEPROM and add it to the "flash" target.
-
-# Targets for code debugging and analysis:
-disasm:	main.elf
-	avr-objdump -d main.elf
-
-cpp:
-	$(COMPILE) -E main.c
