@@ -149,7 +149,7 @@ int uploadfile(FILE *serialfp, char *filename)
 		int bytesread;
 
 		memset(transmissionbuffer, 0, 64);
-		fprintf(serialfp, "upblock 1 1\r");
+		fprintf(serialfp, "upblock 1\r");
 		if ((bytesread = read(filefd, transmissionbuffer, 64)) < 0)
 		{
 			perror("Unable to read from input file");

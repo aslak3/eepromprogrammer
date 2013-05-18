@@ -1,8 +1,10 @@
-/* I2C EEPROM programmer.
+/* I2C and parallel EEPROM programmer.
  *
  * For the ATMEGA8 and perhaps others.
  *
  * (c) 2013 Lawrence Manning. */
+
+/* Common header. */
 
 #define BUFFER_SIZE 50
 #define PAGE_SIZE 64

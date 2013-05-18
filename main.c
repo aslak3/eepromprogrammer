@@ -1,4 +1,4 @@
-/* EEPROM programmer, common code.
+/* EEPROM programmer, common front end.
  *
  * For the ATMEGA8 and perhaps others.
  *

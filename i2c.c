@@ -4,8 +4,7 @@
  *
  * (c) 2013 Lawrence Manning. */
 
-//#include <stdio.h>
-//#include <stdlib.h>
+/* I2C backend */
 
 #include <util/delay.h>
 #include <util/twi.h>

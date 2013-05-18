@@ -4,9 +4,7 @@
  *
  * (c) 2013 Lawrence Manning. */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+/* Parallel backend. */
 
 #include <avr/io.h>
 #include <util/delay.h>
