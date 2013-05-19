@@ -28,9 +28,6 @@ unsigned char lasttwierror = 0;
 char *greeting = "I2C EEPROM burner v0.1\r\n";
 int writedelay = 5;
 
-/* LOCAL GLOBALS */
-char buffer[BUFFER_SIZE];
-
 void init(void)
 {
 }
@@ -88,7 +85,7 @@ BAD:
 	return 0;
 }
 
-int writemembyte(unsigned char w)
+int writemembyte(unsigned char w, unsigned char pagemode)
 {
 	starttwi();
 	if (!sendaddress()) goto BAD;
@@ -97,7 +94,7 @@ int writemembyte(unsigned char w)
 	stoptwi();
 	
 	/* Delay while write completes. */
-	_delay_ms(writedelay);
+	delayforwrite();
 	
 	return 1;
 
@@ -128,7 +125,7 @@ int writemempage(unsigned char *b)
 	stoptwi();
 	
 	/* Delay while write completes. */
-	_delay_ms(writedelay);
+	delayforwrite();
 
 	return 1;
 BAD:

@@ -77,7 +77,7 @@ int nextreadmembyte(unsigned char *r, int last)
 	return 1;
 }
 
-int writemembyte(unsigned char w)
+int writemembyte(unsigned char w, unsigned char pagemode)
 {
 	PORTD &= ~MEM_WE;		/* WE low. */
 	_delay_us(10);
@@ -87,8 +87,8 @@ int writemembyte(unsigned char w)
 	PORTD |= MEM_WE;		/* WE up again. */
 	_delay_us(10);
 	
-	_delay_ms(writedelay);
-	
+	if (!pagemode) delayforwrite();
+		
 	return 1;
 }
 
@@ -102,12 +102,12 @@ int writemempage(unsigned char *b)
 	
 	for (c = 0; c < PAGE_SIZE; c++)
 	{
-		writemembyte(b[c]);
+		writemembyte(b[c], 1);
 
 		clockcounter(1);
 	}
 
-	_delay_ms(writedelay);
+	delayforwrite();
 
 	DDRB = 0x00; /* Back to input. */
 

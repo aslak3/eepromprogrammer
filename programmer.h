@@ -9,11 +9,12 @@
 #define BUFFER_SIZE 50
 #define PAGE_SIZE 64
 
-/* For debugging */
+/* From main.c */
 void writechar(char c, unsigned char debug);
 void writehexbyte(unsigned char b, unsigned char debug);
 void writehexword(unsigned int n, unsigned char debug);
 void writestring(char *string, unsigned char debug);
+void delayforwrite(void);
 
 /* Functions to implement. */
 
@@ -28,7 +29,7 @@ void resetcounter(void);
 void resetmemory(void);
 int startreadmembyte(void);
 int nextreadmembyte(unsigned char *r, int last);
-int writemembyte(unsigned char w);
+int writemembyte(unsigned char w, unsigned char pagemode);
 int writemempage(unsigned char *b);
 unsigned char memoryfailed(void);
 

@@ -17,13 +17,9 @@
 #include "programmer.h"
 
 /* Serial related */
-void writechar(char c, unsigned char debug);
-void writehexbyte(unsigned char b, unsigned char debug);
-void writehexword(unsigned int n, unsigned char debug);
-void writestring(char *string, unsigned char debug);
-char readchar(void);
-void readstring(char *string);
-void hello(void);
+static char readchar(void);
+static void readstring(char *string);
+static void hello(void);
 
 /* EXPORTED GLOBALS */
 unsigned char debugmode = 0;
@@ -151,7 +147,7 @@ int main(void)
 				w = strtol(args[2], NULL, 0);
 			for (c = 0; c < count; c++)
 			{
-				if (!(writemembyte(w)))
+				if (!(writemembyte(w, 0)))
 				{
 					erroredcommand = 1;
 					break;
@@ -166,7 +162,7 @@ int main(void)
 				neg = strtol(args[2], NULL, 0);
 
 			for (c = 0; c < PAGE_SIZE; c++)
-				page[c] = c ^ neg;
+				page[c] = (unsigned char)(c) ^ neg;
 				
 			for (c = 0; c < count; c++)
 			{
@@ -216,8 +212,9 @@ int main(void)
 		{
 			for (c = 0; c < count; c++)
 			{
-				for (c = 0; c < PAGE_SIZE; c++)
-					page[c] = readchar();
+				unsigned char d;
+				for (d = 0; d < PAGE_SIZE; d++)
+					page[d] = readchar();
 	
 				if (!(writemempage(page)))
 				{
@@ -291,7 +288,13 @@ void writestring(char *string, unsigned char debug)
 	}
 }
 
-char readchar(void)
+void delayforwrite(void)
+{
+	int d;
+	for (d = 0; d < writedelay; d++) _delay_ms(1);
+}
+
+static char readchar(void)
 {
 	char x;
 
@@ -303,7 +306,7 @@ char readchar(void)
 	return x;
 }
 
-void readstring(char *string)
+static void readstring(char *string)
 {
 	char x;
 	char *p = string;
@@ -322,7 +325,7 @@ void readstring(char *string)
 	if (echo) writestring("\r\n", 0);
 }
 
-void hello(void)
+static void hello(void)
 {
 	writestring(greeting, 0);
 }

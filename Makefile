@@ -17,8 +17,8 @@
 DEVICE			= atmega8
 CLOCK			= 8000000
 PROGRAMMER 		= -c USBasp -P avrdoper
-I2C_OBJECTS		= main.o i2c.o
-PARALLEL_OBJECTS	= main.o parallel.o
+I2C_SOURCE		= main.c i2c.c
+PARALLEL_SOURCE		= main.c parallel.c
 FUSES      		= -U hfuse:w:0xd9:m -U lfuse:w:0x24:m
 # ATMega8 fuse bits (fuse bits for other devices are different!):
 # Example for 8 MHz internal oscillator
@@ -61,24 +61,10 @@ FUSES      		= -U hfuse:w:0xd9:m -U lfuse:w:0x24:m
 # Tune the lines below only if you know what you are doing:
 
 AVRDUDE = avrdude $(PROGRAMMER) -p $(DEVICE)
-COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE) -mcall-prologues
-LINK = avr-gcc
+COMPILE = avr-gcc -Wall -Os -DF_CPU=$(CLOCK) -mmcu=$(DEVICE)
 
-# symbolic targets:
+
 all:	i2c.hex parallel.hex
-
-.c.o:
-	$(COMPILE) -c $< -o $@
-
-.S.o:
-	$(COMPILE) -x assembler-with-cpp -c $< -o $@
-# "-x assembler-with-cpp" should not be necessary since this is the default
-# file type for the .S (with capital S) extension. However, upper case
-# characters are not always preserved on Windows. To ensure WinAVR
-# compatibility define the file type manually.
-
-.c.s:
-	$(COMPILE) -S $< -o $@
 
 flash-i2c: all
 	$(AVRDUDE) -U flash:w:i2c.hex:i
@@ -92,10 +78,10 @@ clean:
 	rm -f *.hex *.elf *.o
 
 # file targets:
-i2c.elf: $(I2C_OBJECTS)
-	$(LINK) -o i2c.elf $(I2C_OBJECTS)
-parallel.elf: $(PARALLEL_OBJECTS)
-	$(LINK) -o parallel.elf $(PARALLEL_OBJECTS)
+i2c.elf: $(I2C_SOURCE)
+	$(COMPILE) -o i2c.elf $(I2C_SOURCE)
+parallel.elf: $(PARALLEL_SOURCE)
+	$(COMPILE) -o parallel.elf $(PARALLEL_SOURCE)
 
 i2c.hex: i2c.elf
 	rm -f i2c.hex
