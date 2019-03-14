@@ -29,7 +29,7 @@ void init(void)
 
 void clockcounter(unsigned int count)
 {
-	int c;
+	unsigned int c;
 
 	/* Up and down as quick as you can. */
 	for (c = 0; c < count; c++)
@@ -56,7 +56,7 @@ void resetcounter(void)
 
 void resetmemory(void)
 {
-	PORTD &= ~MEM_CE;       /* CE low (for good) */
+	PORTD |= MEM_CE;
 	PORTD |= MEM_OE;        /* OE high */
 	PORTD |= MEM_WE;        /* WE high */
 }
@@ -68,10 +68,10 @@ int startreadmembyte(void)
 
 int nextreadmembyte(unsigned char *r, int last)
 {
-	PORTD &= ~(MEM_OE);	/* OE low. */
+	PORTD &= (~MEM_OE & ~MEM_CE);	/* OE low. */
 	_delay_us(10);
 	*r = PINB;
-	PORTD |= (MEM_OE);	/* OE high. */
+	PORTD |= MEM_OE | MEM_CE;	/* OE high. */
 	_delay_us(10);
 
 	return 1;
@@ -79,13 +79,17 @@ int nextreadmembyte(unsigned char *r, int last)
 
 int writemembyte(unsigned char w, unsigned char pagemode)
 {
-	PORTD &= ~MEM_WE;		/* WE low. */
+	DDRB = 0xff; /* Databus for output. */
+
+	PORTD &= (~MEM_WE & ~MEM_CE);		/* WE low. */
 	_delay_us(10);
 	PORTB = w;			/* Set data. */
 	_delay_us(10);
 
-	PORTD |= MEM_WE;		/* WE up again. */
+	PORTD |= MEM_WE | MEM_CE;		/* WE up again. */
 	_delay_us(10);
+
+	DDRB = 0x00; /* Back to input. */
 	
 	if (!pagemode) delayforwrite();
 		
@@ -98,8 +102,6 @@ int writemempage(unsigned char *b)
 
 	if (counter & 0x3f) return 0; 	/* Not at the start of a page. */
 	
-	DDRB = 0xff; /* Databus for output. */
-	
 	for (c = 0; c < PAGE_SIZE; c++)
 	{
 		writemembyte(b[c], 1);
@@ -109,8 +111,6 @@ int writemempage(unsigned char *b)
 
 	delayforwrite();
 
-	DDRB = 0x00; /* Back to input. */
-
 	return 1;
 }
 
@@ -118,3 +118,55 @@ unsigned char memoryfailed(void)
 {
 	return 0;	
 }
+
+unsigned char sdpdisable(void)
+{
+	resetcounter();
+	clockcounter(0x5555);
+	writemembyte(0xaa, 0);
+
+	resetcounter();
+	clockcounter(0x2aaa);
+	writemembyte(0x55, 0);
+
+	resetcounter();
+	clockcounter(0x5555);
+	writemembyte(0x80, 0);
+
+	resetcounter();
+	clockcounter(0x5555);
+	writemembyte(0xaa, 0);
+
+	resetcounter();
+	clockcounter(0x2aaa);
+	writemembyte(0x55, 0);
+
+	resetcounter();
+	clockcounter(0x5555);
+	writemembyte(0x20, 0);
+
+	delayforwrite();
+	
+	return 0;
+}
+
+unsigned char sdpenable(void)
+{
+	resetcounter();
+	clockcounter(0x5555);
+	writemembyte(0xaa, 0);
+
+	resetcounter();
+	clockcounter(0x2aaa);
+	writemembyte(0x55, 0);
+
+	resetcounter();
+	clockcounter(0x5555);
+	writemembyte(0xa0, 0);
+
+	delayforwrite();
+
+	return 0;
+}
+
+

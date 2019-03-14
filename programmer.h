@@ -32,6 +32,8 @@ int nextreadmembyte(unsigned char *r, int last);
 int writemembyte(unsigned char w, unsigned char pagemode);
 int writemempage(unsigned char *b);
 unsigned char memoryfailed(void);
+unsigned char sdpdisable(void);
+unsigned char sdpenable(void);
 
 /* Globals to declare. */
 

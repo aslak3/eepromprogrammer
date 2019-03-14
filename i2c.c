@@ -206,3 +206,13 @@ static int sendaddress(void)
 	
 	return 1;
 }
+
+unsigned char sdpdisable(void)
+{
+	return 0;
+}
+
+unsigned char sdpenable(void)
+{
+	return 0;
+}

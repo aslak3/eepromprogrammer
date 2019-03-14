@@ -228,6 +228,10 @@ int main(void)
 			writehexword(counter, 0);
 			writestring("\r\n", 0);
 		}
+		else if (strcmp(args[0], "sdpdisable") == 0)
+			sdpdisable();
+		else if (strcmp(args[0], "sdpenable") == 0)
+			sdpenable();
 		else
 		{
 			writestring("Bad command\r\n", 0);
